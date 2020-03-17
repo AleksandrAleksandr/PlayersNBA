@@ -22,7 +22,8 @@
         </activity>
         <activity
             android:name=".TeamPlayersActivity"
-            android:parentActivityName=".MainActivity">
+            android:parentActivityName=".MainActivity"
+            android:launchMode="singleTop">
             <intent-filter>
                 <action android:name="com.example.basketball.TeamPlayersActivity" />
 

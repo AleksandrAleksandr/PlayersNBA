@@ -5,9 +5,12 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -34,7 +37,8 @@ public class TeamPlayersActivity extends AppCompatActivity {
 
     ArrayList<String> players_names = new ArrayList<>();
     //ArrayList<JSONObject> players_json = new ArrayList<>();
-    TextView text, text2, text3;
+    TextView text2, text3;
+    EditText inputSearch;
 
     ArrayList <Player> players = new ArrayList<>();
     JsonParser jsonParser;
@@ -48,8 +52,8 @@ public class TeamPlayersActivity extends AppCompatActivity {
         setContentView(R.layout.activity_team_players);
 
         list_players = (ListView)findViewById(R.id.list_players);
+        inputSearch = (EditText)findViewById(R.id.editText);
         team_id = getIntent().getIntExtra("teamId", 1);
-        text = findViewById(R.id.textView);
         text2 = findViewById(R.id.textView2);
         text3 = findViewById(R.id.textView3);
 
@@ -64,6 +68,23 @@ public class TeamPlayersActivity extends AppCompatActivity {
         adapter = new ArrayAdapter<>(this, R.layout.list_item, players_names);
         //list_players.setAdapter(adapter);
         listOnClick();
+
+        inputSearch.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                adapter.getFilter().filter(s);
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+
+            }
+        });
     }
 
 
@@ -106,7 +127,7 @@ public class TeamPlayersActivity extends AppCompatActivity {
                                     if (person.getJSONObject("team").getInt("id") == team_id) {
                                         //TeamPlayersActivity.this.players_json.add(person);
                                         TeamPlayersActivity.this.players_names.add(person.getString("first_name") + " " + person.getString("last_name"));
-
+                                        //adapter.notifyDataSetChanged();
                                         list_players.setAdapter(adapter);
                                         //Player player = jsonParser.getPlayer(person);
                                         players.add(jsonParser.getPlayer(person));
@@ -142,7 +163,7 @@ public class TeamPlayersActivity extends AppCompatActivity {
 //                for (Player man :players) {
 //                    if (man.getFirst_name() + " " + man.getLast_name() == view.get)
 //                }
-                intent.putExtra("playerId", position);
+                intent.putExtra("player_id", currPlayer.getId());
                 intent.putExtra("first_name", currPlayer.getFirst_name());
                 intent.putExtra("last_name", currPlayer.getLast_name());
                 intent.putExtra("position", currPlayer.getPosition());

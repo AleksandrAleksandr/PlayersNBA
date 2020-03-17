@@ -57,6 +57,7 @@ public class MainActivity extends YouTubeBaseActivity {
             "New York Knicks", "Oklahoma City Thunder", "Orlando Magic", "Philadelphia 76ers",
             "Phoenix Suns", "Portland Trail Blazers", "Sacramento Kings", "San Antonio Spurs",
             "Toronto Raptors", "Utah Jazz", "Washington Wizards"};
+    //private String[] teams = getResources().getStringArray(R.array.team_names);
 
     int[] team_logo = {R.drawable.ic_atlanta, R.drawable.ic_boston, R.drawable.ic_brooklyn, R.drawable.ic_charlotte, R.drawable.ic_chicago,
             R.drawable.ic_cleveland, R.drawable.ic_dallas, R.drawable.ic_denver, R.drawable.ic_detroit_pistons, R.drawable.ic_warriors,
@@ -115,7 +116,7 @@ public class MainActivity extends YouTubeBaseActivity {
                 //Toast.makeText(MainActivity.this, "id " + position, Toast.LENGTH_SHORT).show();
                 Intent intent = new Intent("com.example.basketball.TeamPlayersActivity");
                 //Intent intent2 = new Intent(MainActivity.this, TeamPlayersActivity.class);
-                intent.putExtra("teamId", 1);
+                intent.putExtra("teamId", position+1);
                 startActivity(intent);
             }
         });

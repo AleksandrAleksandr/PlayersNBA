@@ -3,6 +3,8 @@ package com.example.basketball;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.Map;
+
 public class JsonParser {
 
     public Player getPlayer(JSONObject obj) throws JSONException{
@@ -32,5 +34,31 @@ public class JsonParser {
         String team_name = obj.getJSONObject("team").getString("full_name");
 
         return new Player(id, f_name, s_name, pos, height_feet, height_inches, weight_pounds, abbreviation, city, conference, division, team_name);
+    }
+
+    public Stats getStats(JSONObject obj) throws JSONException{
+        int games = obj.getInt("games_played");
+        int season = obj.getInt("season");
+
+        String min = obj.getString("min");
+        double from_game = roundResult(obj.getDouble("fg_pct")*100);
+        double three = roundResult(obj.getDouble("fg3_pct")*100);
+        double free_throw = roundResult(obj.getDouble("ft_pct")*100);
+        double of_reb = obj.getDouble("oreb");
+        double def_reb = obj.getDouble("dreb");
+        double assists = obj.getDouble("ast");
+        double steals = obj.getDouble("stl");
+        double blocks = obj.getDouble("blk");
+        double turnovers = obj.getDouble("turnover");
+        double fouls = obj.getDouble("pf");
+        double points = obj.getDouble("pts");
+
+        return new Stats(season, games, min, from_game, three, free_throw, of_reb, def_reb, assists, steals, blocks, turnovers, fouls, points);
+    }
+
+    private double roundResult (double d) {
+        d = d*10;
+        int i = (int) Math.round(d);
+        return (double) i/10;
     }
 }
