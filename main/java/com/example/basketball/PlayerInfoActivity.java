@@ -1,23 +1,30 @@
 package com.example.basketball;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.YouTubePlayer;
+import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.AbstractYouTubePlayerListener;
+import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.YouTubePlayerFullScreenListener;
+import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
-import java.util.ArrayList;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -26,29 +33,22 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 
-public class PlayerInfo extends AppCompatActivity {
+public class PlayerInfoActivity extends AppCompatActivity {
 
     TextView first_name, last_name, position, team, city, conference, division, height, weight;
     ImageView image;
-    HttpUrl.Builder urlBuilder;
 
+    HttpUrl.Builder urlBuilder;
     TextView season, games, minutes, from_game, three, free_throw, of_reb, def_reb, assists, steals, blocks, turnovers, fouls, points;
-    //ArrayList<Stats> averages = new ArrayList<>();
     Stats averages;
     JsonParser jsonParser;
 
-    //String[] seasons = getResources().getStringArray(R.array.seasons);
     String[] seasons = {"2019", "2018", "2017", "2016", "2015", "2014", "2013", "2012"};
     Spinner spinner;
 
     int teamId;
     int playerId;
-    int[] team_logo = {R.drawable.ic_atlanta, R.drawable.ic_boston, R.drawable.ic_brooklyn, R.drawable.ic_charlotte, R.drawable.ic_chicago,
-            R.drawable.ic_cleveland, R.drawable.ic_dallas, R.drawable.ic_denver, R.drawable.ic_detroit_pistons, R.drawable.ic_warriors,
-            R.drawable.ic_houston_rockets, R.drawable.ic_indiana_pacers, R.drawable.ic_la_clippers, R.drawable.ic_la_lakers, R.drawable.ic_memphis_grizzlies,
-            R.drawable.ic_miami_heat, R.drawable.ic_milwaukee_bucks, R.drawable.ic_timberwolves, R.drawable.ic_pelicans, R.drawable.ic_new_york_knicks,
-            R.drawable.ic_okc_thunder, R.drawable.ic_orlando, R.drawable.ic_76ers, R.drawable.ic_phoenix_suns, R.drawable.ic_portland_trail,
-            R.drawable.ic_sacramento_kings, R.drawable.ic_spurs, R.drawable.ic_toronto_raptors, R.drawable.ic_utah_jazz, R.drawable.ic_washington_wizards};
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,29 +59,7 @@ public class PlayerInfo extends AppCompatActivity {
         setInfo();
         jsonParser = new JsonParser();
 
-        spinner = (Spinner)findViewById(R.id.spinner);
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, seasons);
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinner.setAdapter(adapter);
-        spinner.setPrompt("Season");
-
-        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                season.setText(getSelectedSeason());
-                try {
-                    run();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-
-            }
-        });
-
+        createSpinner();
     }
 
     private void findViews(){
@@ -113,23 +91,54 @@ public class PlayerInfo extends AppCompatActivity {
         fouls = findViewById(R.id.fouls);
         points = findViewById(R.id.points);
     }
+
     private void setInfo() {
         Intent parent = getIntent();
 
         teamId = parent.getIntExtra("team_id", 0);
         playerId = parent.getIntExtra("player_id", 0);
-        image.setImageResource(team_logo[teamId]);
+        image.setImageResource(SomeData.team_logo[teamId]);
+
+        if (SomeData.videos.containsKey(playerId)){
+            String video_id = SomeData.videos.get(playerId);
+            loadVideo(video_id);
+        }
 
         first_name.setText(parent.getStringExtra("first_name"));
         last_name.setText(parent.getStringExtra("last_name"));
-        //position.setText(parent.getStringExtra("position"));
-        position.setText("Player id " + String.valueOf(playerId));
+        position.setText(parent.getStringExtra("position"));
+        //position.setText("PlayeId " + String.valueOf(playerId));
         team.setText(parent.getStringExtra("team"));
         city.setText(parent.getStringExtra("city"));
         conference.setText(parent.getStringExtra("conference"));
         division.setText(parent.getStringExtra("division"));
         height.setText(String.valueOf(parent.getIntExtra("height_feet", -1)));
         weight.setText(String.valueOf(parent.getIntExtra("weight_pounds", -1)));
+    }
+
+    private void createSpinner() {
+        spinner = (Spinner)findViewById(R.id.spinner);
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, seasons);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinner.setAdapter(adapter);
+        spinner.setPrompt("Season");
+
+        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                season.setText(getSelectedSeason());
+                try {
+                    run();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+
+            }
+        });
     }
 
     void run() throws IOException {
@@ -158,8 +167,8 @@ public class PlayerInfo extends AppCompatActivity {
                 @Override
                 public void onResponse(Call call, Response response) throws IOException {
                     final String myResponse = response.body().string();
-                    //text.setText(myResponse);
-                    PlayerInfo.this.runOnUiThread(new Runnable() {
+
+                    PlayerInfoActivity.this.runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
                             try {
@@ -172,12 +181,9 @@ public class PlayerInfo extends AppCompatActivity {
                                     setStats();
                                 }else {
                                     setZeroStats();
-                                    Toast.makeText(PlayerInfo.this, "Dont play this year", Toast.LENGTH_LONG).show();
+                                    Toast.makeText(PlayerInfoActivity.this, "Man don't play this year", Toast.LENGTH_LONG).show();
                                 }
 
-                                //getStats(stats);
-                                //setStats();
-                                //text.setText(String.valueOf(json.getJSONArray("data").getJSONObject(0).getLong("games_played")));
                             } catch (JSONException e) {
                                 e.printStackTrace();
                             }
@@ -191,7 +197,7 @@ public class PlayerInfo extends AppCompatActivity {
 
     private String getSelectedSeason() {
         Integer year = Integer.valueOf(spinner.getSelectedItem().toString());
-        String season = String.valueOf(year) + " - " + String.valueOf(year+1);
+        String season = "Season " + String.valueOf(year) + " - " + String.valueOf(year+1);
         return season;
     }
 
@@ -225,6 +231,23 @@ public class PlayerInfo extends AppCompatActivity {
         turnovers.setText("");
         fouls.setText("");
         points.setText("");
+    }
+
+    private void loadVideo(final String video_id){
+
+        LinearLayout mainLayout = (LinearLayout)findViewById(R.id.main_layout);
+        YouTubePlayerView youTubePlayerView = new YouTubePlayerView(this);
+        mainLayout.addView(youTubePlayerView);
+
+        getLifecycle().addObserver(youTubePlayerView);
+
+        youTubePlayerView.addYouTubePlayerListener(new AbstractYouTubePlayerListener() {
+            @Override
+            public void onReady(@NonNull YouTubePlayer youTubePlayer) {
+                //String videoId = video_id;
+                youTubePlayer.cueVideo(video_id, 0f);
+            }
+        });
     }
 
 }

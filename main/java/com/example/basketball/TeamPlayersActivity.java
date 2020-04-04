@@ -31,18 +31,15 @@ import okhttp3.Response;
 
 public class TeamPlayersActivity extends AppCompatActivity {
 
-    ListView list_players;
-    HttpUrl.Builder urlBuilder;
     private int team_id;
+    ListView list_players;
+    ArrayAdapter <String> adapter;
+    HttpUrl.Builder urlBuilder;
+    JsonParser jsonParser;
 
     ArrayList<String> players_names = new ArrayList<>();
-    //ArrayList<JSONObject> players_json = new ArrayList<>();
-    TextView text2, text3;
-    EditText inputSearch;
-
     ArrayList <Player> players = new ArrayList<>();
-    JsonParser jsonParser;
-    ArrayAdapter <String> adapter;
+    EditText inputSearch;
 
     Player currPlayer;
 
@@ -51,13 +48,7 @@ public class TeamPlayersActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_team_players);
 
-        list_players = (ListView)findViewById(R.id.list_players);
-        inputSearch = (EditText)findViewById(R.id.editText);
-        team_id = getIntent().getIntExtra("teamId", 1);
-        text2 = findViewById(R.id.textView2);
-        text3 = findViewById(R.id.textView3);
-
-        jsonParser = new JsonParser();
+        init();
 
         try {
             run();
@@ -65,35 +56,27 @@ public class TeamPlayersActivity extends AppCompatActivity {
             e.printStackTrace();
         }
 
-        adapter = new ArrayAdapter<>(this, R.layout.list_item, players_names);
-        //list_players.setAdapter(adapter);
         listOnClick();
 
-        inputSearch.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                adapter.getFilter().filter(s);
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-
-            }
-        });
+        createSearch();
     }
 
+    private void init() {
+        inputSearch = (EditText)findViewById(R.id.editText);
+        list_players = (ListView)findViewById(R.id.list_players);
+        team_id = getIntent().getIntExtra("teamId", 1);
+
+        jsonParser = new JsonParser();
+
+        adapter = new ArrayAdapter<>(this, R.layout.list_item, players_names);
+    }
 
     void run() throws IOException {
         OkHttpClient client = new OkHttpClient();
         String url;
         Request request;
 
-        for (int p = 25; p < 33; p++ ){
+        for (int p = 25; p < 34; p++ ){
             urlBuilder = HttpUrl.parse("https://www.balldontlie.io/api/v1/players").newBuilder();
             urlBuilder.addQueryParameter("page", String.valueOf(p));
             urlBuilder.addQueryParameter("per_page", "100");
@@ -108,13 +91,12 @@ public class TeamPlayersActivity extends AppCompatActivity {
                 @Override
                 public void onFailure(Call call, IOException e) {
                     call.cancel();
-                    //text.setText(" call was cancel");
                 }
 
                 @Override
                 public void onResponse(Call call, Response response) throws IOException {
                     final String myResponse = response.body().string();
-                    //text.setText(myResponse);
+
                     TeamPlayersActivity.this.runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
@@ -122,25 +104,18 @@ public class TeamPlayersActivity extends AppCompatActivity {
                                 JSONObject json = new JSONObject(myResponse);
                                 JSONArray data = json.getJSONArray("data");
                                 JSONObject person;
-                                for (int k = 0; k < 100; k++) {
+                                for (int k = 0; k < data.length(); k++) {
                                     person = data.getJSONObject(k);
                                     if (person.getJSONObject("team").getInt("id") == team_id) {
-                                        //TeamPlayersActivity.this.players_json.add(person);
-                                        TeamPlayersActivity.this.players_names.add(person.getString("first_name") + " " + person.getString("last_name"));
+                                        players_names.add(person.getString("first_name") + " " + person.getString("last_name"));
                                         //adapter.notifyDataSetChanged();
                                         list_players.setAdapter(adapter);
-                                        //Player player = jsonParser.getPlayer(person);
+
                                         players.add(jsonParser.getPlayer(person));
-                                        text3.setText(String.valueOf(players_names.size()));
                                     }
                                 }
-                                //json = null;
-                                //data = null;
-                                //person = null;
-
                             } catch (JSONException e) {
                                 e.printStackTrace();
-                                text2.setText(e.getMessage().toString());
                             }
                         }
                     });
@@ -154,15 +129,17 @@ public class TeamPlayersActivity extends AppCompatActivity {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 
-                //Toast.makeText(TeamPlayersActivity.this, "id " + position, Toast.LENGTH_SHORT).show();
-                text3.setText(String.valueOf(players.size()));
+                TextView selectedItem = (TextView)view;
 
-                //Intent intent = new Intent("com.example.basketball.PlayerInfo");
-                Intent intent = new Intent(TeamPlayersActivity.this, PlayerInfo.class);
-                currPlayer = players.get(position);
-//                for (Player man :players) {
-//                    if (man.getFirst_name() + " " + man.getLast_name() == view.get)
-//                }
+                //currPlayer = players.get(position);
+                for (Player man :players) {
+                    if ((selectedItem.getText()).equals(man.getFirst_name() + " " + man.getLast_name())) {
+                        currPlayer = man;
+                        break;
+                    }
+                }
+
+                Intent intent = new Intent(TeamPlayersActivity.this, PlayerInfoActivity.class);
                 intent.putExtra("player_id", currPlayer.getId());
                 intent.putExtra("first_name", currPlayer.getFirst_name());
                 intent.putExtra("last_name", currPlayer.getLast_name());
@@ -180,8 +157,22 @@ public class TeamPlayersActivity extends AppCompatActivity {
         });
     }
 
-    public ArrayList<Player> getPlayers() {
-        return players;
-    }
+    void createSearch() {
+        inputSearch.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
 
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                adapter.getFilter().filter(s);
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+
+            }
+        });
+    }
 }
